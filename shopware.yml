@@ -1,0 +1,20 @@
+version: '2'
+services:
+  web:
+    build: ./build/nginx
+    image: stadesign/shopware-nginx
+  php:
+    build: ./build/php
+    image: stadesign/shopware-php
+    restart: always
+  varnish:
+    build: ./build/varnish
+    image: stadesign/varnish
+    restart: always
+    ports:
+      - 8080:80
+  db:
+    image: mariadb:10.1
+    restart: always
+    expose:
+      - "3306"

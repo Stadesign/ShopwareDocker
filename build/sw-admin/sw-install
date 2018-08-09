@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SW_VERSION=$1
+if [ $# -eq 0 ]; then
+    echo "No Version Provided. Using ${SHOPWARE_VERSION}"
+    SW_VERSION=$SHOPWARE_VERSION
+fi
+chmod 600 ~/.ssh/id_rsa
+chmod 600 ~/.ssh/id_rsa.pub
+chmod 600 ~/.ssh/known_hosts
+
+sw install:release --release=${SW_VERSION} --install-dir=/var/www/ --db-host=${SW_MYSQL_HOST} \
+  --db-user=${MYSQL_USER} --db-password=${MYSQL_PASSWORD} --db-name=${MYSQL_DATABASE} --shop-path=/ \
+  --shop-host=${HTTP_HOST}
+updateConfig
+updateVCS
+chown www-data:www-data -R  /var/www

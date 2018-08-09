@@ -1,0 +1,79 @@
+version: '2'
+services:
+  scp:
+    image: atmoz/sftp:alpine
+    volumes:
+     - www:/home/shopware/www
+    ports:
+     - "2222:22"
+    command: shopware:SUP€R_S3CR3D_P4SSWORD!!:1033
+  sw-admin:
+    build: ./build/sw-admin
+    image: stadesign/sw-admin
+    container_name: sw-admin
+    stdin_open: true
+    tty: true
+    env_file:
+      - live.env
+    environment:
+      STORE_ADDONS: |
+        ["SwagLicense"]
+
+      INSTALL_ADDONS: |
+        ["Cron", "AdvancedMenu", "LastArticles"]
+    volumes:
+      - www:/var/www/
+    depends_on:
+      - db-live
+  sw-es:
+    image: elasticsearch:2.4.6-alpine
+    container_name: sw-es
+    environment:
+      - cluster.name=sw-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+  web-live:
+    extends:
+      file: shopware.yml
+      service: web
+    container_name: web-live
+    env_file:
+      - live.env
+    depends_on:
+      - php-live
+    volumes:
+      - www:/var/www/
+  php-live:
+    extends:
+      file: shopware.yml
+      service: php
+    container_name: php-live
+    volumes:
+      - www:/var/www/
+  db-live:
+    container_name: db-live
+    env_file:
+      - live.env
+    extends:
+      file: shopware.yml
+      service: db
+    volumes:
+      - db:/var/lib/mysql
+  varnish-live:
+    extends:
+      file: shopware.yml
+      service: varnish
+    container_name: varnish-live
+    ports:
+      - "8080:80"
+    environment:
+      BACKEND: web-live
+    depends_on:
+      - web-live
+volumes:
+  www: {}
+  db: {}

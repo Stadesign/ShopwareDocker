@@ -1,0 +1,47 @@
+#!/usr/bin/env php
+<?php
+$data = [];
+
+$install = [];
+if(isset($_SERVER["INSTALL_ADDONS"])) {
+  $install = json_decode($_SERVER["INSTALL_ADDONS"]);
+}
+
+$download = [];
+if(isset($_SERVER["STORE_ADDONS"])){
+  $download = json_decode($_SERVER["STORE_ADDONS"]);
+}
+
+$localBase = "/var/www";
+
+function getKey($path, $current = null)
+{
+    global $data;
+    if (is_null($current)) $current = $data;
+    if (!is_array($path)) $path = explode(".", $path);
+    if (isset($current[$path[0]])) {
+        if (count($path) == 1) {
+            return $current[$path[0]];
+        } else {
+            return getKey(array_slice($path, 1), $current[$path[0]]);
+        }
+    } else {
+        return [];
+    }
+}
+
+echo "Downloading Plugins from Store\n";
+foreach ($download as $d){
+  system("console sw:store:download ".$d);
+  $install[] = $d;
+}
+
+echo "Installing and activating Plugins\n";
+system("console sw:plugin:refresh");
+
+foreach ($install as $i) {
+    echo $i."\n";
+    system("console sw:plugin:install --activate ".$i);
+}
+
+system("console sw:theme:cache:generate");

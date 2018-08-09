@@ -1,0 +1,116 @@
+#!/usr/bin/env php
+<?php
+
+$https = false;
+if (isset($_ENV["SW_USE_HTTPS"])) {
+    $https = $_ENV["SW_USE_HTTPS"]=="true";
+}
+var_dump($https);
+
+$dev = false;
+if(isset($argv[1])){
+  $dev = ($argv[1]=="1");
+}
+
+$path = "/var/www/config.php";
+$outPath = $path;//"./config2.php";
+
+$config = require($path);
+
+$es_prefix = "sw_shop_".($dev?"dev":"live");
+echo $es_prefix."\n";
+
+if (isset($_ENV["SW_ES_PREFIX"])) {
+    $es_prefix = $_ENV["SW_ES_PREFIX"];
+}
+
+
+$config['template_security'] = [
+      'php_modifiers' => ['file_get_contents'],
+      'php_functions' => ['base64_encode'],
+];
+
+$config['es'] = [
+    'enabled' => true,
+    'number_of_replicas' => 0,
+    'number_of_shards' => null,
+    'client' => [
+        'hosts' => [
+            'sw-es:9200'
+        ]
+    ],
+    "prefix" => $es_prefix
+];
+
+$config['httpCache'] = [
+    'enabled' => false,
+];
+$config['trustedProxies'] = [
+    '127.0.0.1',
+    "varnish-live",
+    "172.0.0.0/8"
+];
+
+$config['csrfProtection'] = [
+    'frontend' => false,
+    'backend' => false
+];
+$config['front'] = [
+    'showException' => false,
+    'noErrorHandler' => false,
+];
+
+$config['phpsettings'] = [
+    'display_errors' => 0,
+];
+
+$output = "<?php\n\t";
+if(!$https){
+  $output .= "unset(\$_SERVER['HTTPS']);\n\t";
+}
+$output .= "return " . var_export($config, true) . ";";
+
+file_put_contents($outPath, $output);
+print "SAVING ALTERED CONFIG\n";
+
+/* Connect to a MySQL database using driver invocation */
+$db = $config["db"]["dbname"];
+$host = $config["db"]["host"];
+$user = $config["db"]["username"];
+$password = $config["db"]["password"];
+$dsn = "mysql:dbname=$db;host=$host";
+
+try {
+    $dbh = new PDO($dsn, $user, $password);
+    if(!$dev){
+        $queries = [
+            "UPDATE s_core_shops SET base_path=NULL, base_url=NULL",
+        ];
+    }
+    $keys = [
+      "firstRunWizardEnabled" => false
+    ];
+
+    /*if(!$dev){
+      $keys["proxy"] = "http://varnish-live";
+    }*/
+
+    foreach ($dbh->query("SELECT E.id AS eid,E.name AS name ,V.id AS vid FROM s_core_config_elements AS E LEFT JOIN s_core_config_values AS V ON V.element_id=E.id WHERE (V.shop_id=1 OR V.id IS NULL)")->fetchAll(PDO::FETCH_OBJ) as $row) {
+        if (isset($keys[$row->name])) {
+            $value = $dbh->quote(serialize($keys[$row->name]));
+            if (is_null($row->vid)) {
+                $queries[] = "INSERT INTO s_core_config_values (element_id,shop_id,value) VALUES ({$row->eid}, 1,$value)";
+            } else {
+                $queries[] = "UPDATE s_core_config_values SET value = $value WHERE id={$row->vid};";
+            }
+            unset ($keys[$row->name]);
+        }
+    }
+
+    foreach ($queries as $query) {
+        print "EXECUTING QUERY $query\n";
+        $dbh->exec($query);
+    }
+} catch (PDOException $e) {
+    echo 'Connection failed: ' . $e->getMessage();
+}
