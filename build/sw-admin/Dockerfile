@@ -80,4 +80,10 @@ RUN chmod +x /usr/bin/maintenance
 
 RUN ln -s /usr/bin/sw.phar /usr/bin/sw
 
-ENTRYPOINT ["/bin/bash"]
+ADD cronjobs /etc/cron.d/shopware-cron
+RUN chmod 0644 /etc/cron.d/shopware-cron
+RUN crontab /etc/cron.d/shopware-cron
+
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

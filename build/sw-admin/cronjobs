@@ -1,0 +1,16 @@
+# m h  dom mon dow   command
+*/1 * * * * console sw:cron:run
+38 1 * * * console sw:rebuild:seo:index
+40 1 * * * console sw:warm:http:cache
+0 4 * * * console sw:es:index:populate
+0 * * * * console sw:es:backlog:sync
+0 3 * * * console sw:media:optimize --modified="after 24 hours ago"
+0 3 * * 1 console sw:es:index:cleanup
+0 3 * * * console sw:es:backlog:clear
+
+# run elasticsearch updates on reboot
+@reboot console sw:es:index:populate
+@reboot console sw:es:index:cleanup
+
+# update seo index on reboot
+@reboot console sw:rebuild:seo:index
