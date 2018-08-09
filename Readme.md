@@ -1,5 +1,5 @@
 # Shopware Docker
-This Docker image collection provides a ready-to-go solution for Shopware. It's based on nginx, php-fpm, MariaDB and Varnish. Furthermore, it provides a simple SCP-Server for up-/downloading files.
+This Docker image collection provides a ready-to-go solution for Shopware. It's based on nginx, php-fpm, MariaDB, ElasticSearch and Varnish. Furthermore, it provides a simple SCP-Server for up-/downloading files.
 
 ## Structure
 ![structure](img/shopware.png)
