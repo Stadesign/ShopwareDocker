@@ -48,7 +48,15 @@ docker exec -it sw-admin console sw:plugin:install --activate SwagDemoDataDE
 
 The `sw-admin`-container might also be the point for running backups.
 
-# Possible improvements:
+# Troubleshooting
+If the categories are empty, just run
+```
+docker exec -it sw-admin console sw:es:index:populate
+```
+
+This will populate the elasticsearch index and the categories are filled with products.
+
+# Possible improvements
 You might want to run all the machines within an VPN or virtual network and only forward the needed ports to the public. Maybe a [reverse-proxy docker](https://github.com/jwilder/nginx-proxy) is also a good idea.
 
 # Help wanted / needed
