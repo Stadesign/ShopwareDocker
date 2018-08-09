@@ -48,6 +48,9 @@ docker exec -it sw-admin console sw:plugin:install --activate SwagDemoDataDE
 
 The `sw-admin`-container might also be the point for running backups.
 
+### cronjobs
+You can alter the crontab for the `sw-admin` machine in this file: `build/sw-admin/cronjobs`.
+
 # Troubleshooting
 If the categories are empty, just run
 ```
